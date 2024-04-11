@@ -150,6 +150,7 @@ vim.opt.cursorline = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
+vim.opt.termguicolors = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -163,6 +164,25 @@ vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+vim.keymap.set('i', 'jj', '<Esc>', { silent = true })
+vim.keymap.set('n', '<leader>w', ':w<CR>', { desc = 'Save file', remap = true, silent = true })
+
+--center cursor after various movement commands
+vim.keymap.set('n', '<C-d>', '<C-d>zz')
+vim.keymap.set('n', '<C-u>', '<C-u>zz')
+vim.keymap.set('n', 'n', 'nzzzv')
+vim.keymap.set('n', 'N', 'Nzzzv')
+-- vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz")
+-- vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz")
+
+vim.keymap.set('n', '{', '{zz')
+vim.keymap.set('n', '}', '}zz')
+
+--move line up and down
+vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'Join Line Below' })
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv", { desc = 'Move Selection Up' })
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv", { desc = 'Move Selection Down' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -186,6 +206,11 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+if vim.lsp.inlay_hint then
+  vim.keymap.set('n', '<leader>uh', function()
+    vim.lsp.inlay_hint.enable(0, not vim.lsp.inlay_hint.is_enabled())
+  end, { desc = 'Toggle Inlay Hints' })
+end
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -198,6 +223,15 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
     vim.highlight.on_yank()
+  end,
+})
+
+vim.api.nvim_create_autocmd({ 'FileType' }, {
+  desc = 'Enable completions for dadbod/sql',
+  group = vim.api.nvim_create_augroup('dadbad', {}),
+  pattern = { 'sql', 'mysql', 'plsql' },
+  callback = function()
+    vim.schedule(require('cmp').setup.buffer { sources = { { name = 'dadbod' } } })
   end,
 })
 
@@ -237,24 +271,6 @@ require('lazy').setup {
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
 
-  -- Here is a more advanced example where we pass configuration
-  -- options to `gitsigns.nvim`. This is equivalent to the following lua:
-  --    require('gitsigns').setup({ ... })
-  --
-  -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-  },
-
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -283,6 +299,7 @@ require('lazy').setup {
         ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
         ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
         ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
+        ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
       }
     end,
   },
@@ -550,7 +567,9 @@ require('lazy').setup {
         lua_ls = {
           -- cmd = {...},
           -- filetypes { ...},
-          -- capabilities = {},
+          capabilities = {
+            hint = { enable = true },
+          },
           settings = {
             Lua = {
               runtime = { version = 'LuaJIT' },
@@ -587,7 +606,7 @@ require('lazy').setup {
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format lua code
+        'stylua',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -784,7 +803,7 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc' },
+        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'xml', 'http', 'json', 'graphql' },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
